@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>待办清单</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-indigo-50 min-h-screen flex items-center justify-center">
+
+    <div class="bg-white rounded-2xl shadow-lg p-8 w-96">
+      <h1 class="text-3xl font-bold text-indigo-600 mb-6">📝 待办清单</h1>
+
+      <div class="flex gap-2 mb-6">
+        <input
+          id="taskInput"
+          type="text"
+          placeholder="输入新任务..."
+          class="flex-1 border-2 border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-400"
+        >
+        <button
+          onclick="addTask()"
+          class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium"
+        >
+          添加
+        </button>
+      </div>
+
+      <div id="taskList" class="flex flex-col gap-2"></div>
+    </div>
+
+    <script>
+      // 页面加载时获取所有任务
+      async function loadTasks() {
+        const res = await fetch('http://localhost:3001/api/todos');
+        const todos = await res.json();
+        const taskList = document.getElementById('taskList');
+        taskList.innerHTML = '';
+        todos.forEach(todo => renderTask(todo));
+      }
+
+      // 添加任务
+      async function addTask() {
+        const input = document.getElementById('taskInput');
+        const text = input.value.trim();
+        if (text === '') return;
+
+        const res = await fetch('http://localhost:3001/api/todos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        const todo = await res.json();
+        renderTask(todo);
+        input.value = '';
+      }
+
+      // 删除任务
+      async function deleteTask(id) {
+        await fetch(`http://localhost:3001/api/todos/${id}`, {
+          method: 'DELETE'
+        });
+        loadTasks();
+      }
+
+      // 渲染任务到页面
+      function renderTask(todo) {
+        const taskList = document.getElementById('taskList');
+        const item = document.createElement('div');
+        item.className = 'flex justify-between items-center bg-indigo-50 px-4 py-3 rounded-lg';
+        item.innerHTML = `
+          <span class="text-gray-700">${todo.text}</span>
+          <button
+            onclick="deleteTask(${todo.id})"
+            class="text-red-400 hover:text-red-600 font-medium text-sm"
+          >
+            删除
+          </button>
+        `;
+        taskList.appendChild(item);
+      }
+
+      // 回车添加
+      document.getElementById('taskInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') addTask();
+      });
+
+      loadTasks();
+    </script>
+  </body>
+</html>
